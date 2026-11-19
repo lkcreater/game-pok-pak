@@ -3,7 +3,7 @@ import type { ItemId } from "./items";
 export type Level = {
   id: string; // stable save key — never change after release
   name: string;
-  map: string[]; // legend: # wall, B brick, . empty
+  map: string[]; // legend: # wall, B brick, . empty — keep open rows above the frame so balls can loop over it
   balls: number; // launched together, no reserve
   par: number; // seconds, for time bonus
   stars: [number, number]; // min score for 2★ and 3★
@@ -15,6 +15,10 @@ export type Level = {
 };
 
 const MAP_CLASSIC = [
+  "............................................",
+  "............................................",
+  "............................................",
+  "............................................",
   "..##################....##################..",
   "..#......................................#..",
   "..#.BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB.#..",
@@ -58,10 +62,14 @@ const MAP_CLASSIC = [
   "..#.BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB.#..",
   "..#.BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB.#..",
   "..#......................................#..",
-  "..##################....##################..",
+  "..################........################..",
 ];
 
 const MAP_DIAMOND = [
+  "............................................",
+  "............................................",
+  "............................................",
+  "............................................",
   "..##################....##################..",
   "..#......................................#..",
   "..#......................................#..",
@@ -105,6 +113,10 @@ const MAP_DIAMOND = [
 ];
 
 const MAP_ROOMS = [
+  "............................................",
+  "............................................",
+  "............................................",
+  "............................................",
   "..##################....##################..",
   "..#......................................#..",
   "..#.BBBBBBBBBBBBBBBB.##.BBBBBBBBBBBBBBBB.#..",
@@ -157,27 +169,27 @@ export const LEVELS: Level[] = [
     id: "classic",
     name: "บล็อกยักษ์",
     map: MAP_CLASSIC,
-    balls: 3,
-    par: 120,
-    stars: [15500, 16500],
-    items: { guaranteed: ["x3", "up1", "boardx1"], pool: ["up3", "up3", "fire"] },
+    balls: 8,
+    par: 150,
+    stars: [17500, 18500],
+    items: { guaranteed: ["x3", "up1", "boardx1"], pool: ["up3", "up3", "x2", "fire", "boardx1"], dropChance: 0.04 },
   },
   {
     id: "diamond",
     name: "เพชร",
     map: MAP_DIAMOND,
-    balls: 2,
-    par: 70,
-    stars: [6800, 7600],
-    items: { guaranteed: ["x2"], pool: ["up1", "up3", "boardx1", "fire"] },
+    balls: 6,
+    par: 120,
+    stars: [7600, 8600],
+    items: { guaranteed: ["x2"], pool: ["up1", "up3", "boardx1", "fire"], dropChance: 0.04 },
   },
   {
     id: "rooms",
     name: "สี่ห้อง",
     map: MAP_ROOMS,
-    balls: 3,
+    balls: 8,
     par: 110,
-    stars: [12500, 13500],
-    items: { guaranteed: ["x3", "x2"], pool: ["up3", "fire", "boardx1"], dropChance: 0.03 },
+    stars: [14800, 15500],
+    items: { guaranteed: ["x3", "x2"], pool: ["up3", "fire", "boardx1"], dropChance: 0.04 },
   },
 ];

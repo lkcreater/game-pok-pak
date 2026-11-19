@@ -9,7 +9,7 @@
 
 ## 2026-11-19 — Docs Stop hook เทียบเวลาแก้ไฟล์ + marker
 - **ตัดสินใจ:** `.claude/hooks/docs-check.sh` block การจบงานเมื่อไฟล์โค้ดถูกแก้หลัง docs ล่าสุด แล้ว touch `.claude/.docs-checked` เพื่อเตือนครั้งเดียวต่อรอบ
-- **เหตุผล:** เช็คแค่ git status จะเงียบตลอดเมื่อ docs มีแก้ค้าง; ไม่มี marker จะเตือนซ้ำทุกครั้งหลังตอบว่าไม่ต้องแก้
+- **เหตุผล:** เช็คแค่ git status จะเงียบตลอดเมื่อ docs มีแก้ค้าง; ไม่มี marker จะเตือนซ้ำทุกครั้งหลังตอบว่าไม่ต้องแก้; ไฟล์ใน commit ที่เกิดหลัง docs/marker ก็นับด้วย เพราะ workflow ปกติ commit ก่อนจบ turn (tree สะอาดตอน Stop)
 - **ไม่เลือก:** PostToolUse (ถี่เกิน), SessionEnd (สั่ง Claude ต่อไม่ได้)
 
 ## 2026-11-19 — App เป็น client-only (`next/dynamic` ssr:false)

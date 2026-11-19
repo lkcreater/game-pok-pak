@@ -12,13 +12,22 @@ for f in docs/spec.md docs/decisions.md CLAUDE.md "$marker"; do
   [[ -f $f ]] && { [[ -z $ref || $f -nt $ref ]] && ref=$f; }
 done
 
+# candidates: uncommitted changes + files touched by commits made since the newest doc/marker
+# (so code committed within the same turn still triggers the reminder)
+candidates() {
+  git status --porcelain --untracked-files=all 2>/dev/null | while IFS= read -r line; do
+    f=${line:3}; f=${f##* -> }; f=${f%\"}; echo "${f#\"}"
+  done
+  [[ -n $ref ]] && git log --since="@$(date -r "$ref" +%s)" --name-only --format= 2>/dev/null
+}
+
 stale=0
-while IFS= read -r line; do
-  f=${line:3}; f=${f##* -> }; f=${f%\"}; f=${f#\"}
+while IFS= read -r f; do
+  [[ -n $f ]] || continue
   case $f in docs/*|CLAUDE.md|"$marker") continue ;; esac
   [[ -f $f ]] || continue
   if [[ -z $ref || $f -nt $ref ]]; then stale=1; break; fi
-done < <(git status --porcelain --untracked-files=all 2>/dev/null)
+done < <(candidates)
 
 (( stale )) || exit 0
 mkdir -p .claude && touch "$marker"

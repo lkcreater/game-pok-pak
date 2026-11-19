@@ -22,4 +22,6 @@ sleep 1; echo z >> lib/x.ts
 out=$(run '{"stop_hook_active": true}'); [[ -z $out ]] || fail "5 stop_hook_active → silent" "$out"
 sleep 1; echo more >> docs/spec.md
 out=$(run); [[ -z $out ]] || fail "6 docs edited after code → silent" "$out"
+sleep 1; echo w >> lib/x.ts; git add -A && git -c user.email=t@t -c user.name=t commit -qm code
+out=$(run); blocks "$out" || fail "7 code committed after docs (clean tree) → block" "$out"
 echo ok

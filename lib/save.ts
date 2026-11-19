@@ -16,7 +16,8 @@ const defaultStore = (): Store | null => {
 
 const isRecord = (v: unknown): v is LevelRecord =>
   typeof v === "object" && v !== null &&
-  Number.isFinite((v as LevelRecord).best) && Number.isFinite((v as LevelRecord).stars);
+  Number.isFinite((v as LevelRecord).best) &&
+  Number.isInteger((v as LevelRecord).stars) && (v as LevelRecord).stars >= 0 && (v as LevelRecord).stars <= 3;
 
 export function loadSave(store: Store | null = defaultStore()): SaveData {
   const data: SaveData = { name: "", levels: {} };

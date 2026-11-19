@@ -41,6 +41,12 @@ test("bad level entries are dropped, good ones kept", () => {
   expect(loadSave(s)).toEqual({ name: "", levels: { a: { best: 10, stars: 1 } } });
 });
 
+test("out-of-range or fractional stars are dropped (would crash star rendering)", () => {
+  const s = memStore();
+  s.m.set(SAVE_KEY, JSON.stringify({ name: "n", levels: { a: { best: 1, stars: 7 }, b: { best: 1, stars: -1 }, c: { best: 1, stars: 1.5 }, d: { best: 5, stars: 3 } } }));
+  expect(loadSave(s).levels).toEqual({ d: { best: 5, stars: 3 } });
+});
+
 test("recordResult keeps max best and max stars", () => {
   const d: SaveData = { name: "n", levels: { a: { best: 500, stars: 3 } } };
   expect(recordResult(d, "a", 300, 1).levels.a).toEqual({ best: 500, stars: 3 });

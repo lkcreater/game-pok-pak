@@ -1,0 +1,15 @@
+export const CELL = 12;
+export const BALL_SPEED = 360; // px/s
+export const FIXED_DT = 1 / 120;
+export const BALL_RADIUS = 3;
+export const PADDLE_W = 72;
+export const PADDLE_H = 8;
+export const PADDLE_STEP = 0.25; // fraction of PADDLE_W per growPaddle step
+export const PADDLE_MAX = 2; // × PADDLE_W
+export const MAX_BALLS = 500;
+export const DROP_SPEED = 150;
+export const DROP_RADIUS = 9;
+export const DEFAULT_DROP_CHANCE = 0.02;
+export const MIN_VY_RATIO = 0.25;
+export const MAX_BOUNCE_DEG = 60;
+export const PADDLE_ZONE = 0.35; // fraction of world height below the map

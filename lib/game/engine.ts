@@ -1,8 +1,9 @@
 import {
-  BALL_RADIUS, BALL_SPEED, CELL, FIXED_DT, MAX_BOUNCE_DEG, MIN_VY_RATIO, PADDLE_W, PADDLE_ZONE,
+  BALL_RADIUS, BALL_SPEED, CELL, DEFAULT_DROP_CHANCE, DROP_RADIUS, DROP_SPEED, FIXED_DT, MAX_BALLS,
+  MAX_BOUNCE_DEG, MIN_VY_RATIO, PADDLE_H, PADDLE_MAX, PADDLE_STEP, PADDLE_W, PADDLE_ZONE,
 } from "./constants";
 import { Cell, cellAt, parseMap, type Grid } from "./grid";
-import type { GameActions, ItemId } from "./items";
+import { ITEMS, type GameActions, type ItemId } from "./items";
 import type { Level } from "./levels";
 import { timeBonus } from "./scoring";
 
@@ -11,6 +12,12 @@ export type Drop = { x: number; y: number; item: ItemId };
 export type Status = "ready" | "playing" | "won" | "lost";
 
 const DEG = Math.PI / 180;
+
+function rotate(vx: number, vy: number, deg: number) {
+  const c = Math.cos(deg * DEG);
+  const s = Math.sin(deg * DEG);
+  return { vx: vx * c - vy * s, vy: vx * s + vy * c };
+}
 
 /** DOM-free game state, advanced one FIXED_DT per step(). */
 export class Game implements GameActions {
@@ -27,13 +34,21 @@ export class Game implements GameActions {
   fireLeft = 0;
   bricksLeft: number;
   brokenCells: number[] = []; // drained by the renderer
+  hidden = new Map<number, ItemId>(); // brick cell index → guaranteed item
 
   constructor(readonly level: Level, protected rng: () => number = Math.random) {
     this.grid = parseMap(level.map);
     this.width = this.grid.cols * CELL;
     this.height = Math.round((this.grid.rows * CELL) / (1 - PADDLE_ZONE));
     this.paddleY = this.height - 40;
-    this.bricksLeft = this.grid.cells.filter((c) => c === Cell.Brick).length;
+    const bricks: number[] = [];
+    this.grid.cells.forEach((c, i) => c === Cell.Brick && bricks.push(i));
+    this.bricksLeft = bricks.length;
+    for (let i = bricks.length - 1; i > 0; i--) {
+      const j = Math.floor(rng() * (i + 1));
+      [bricks[i], bricks[j]] = [bricks[j], bricks[i]];
+    }
+    (level.items?.guaranteed ?? []).slice(0, bricks.length).forEach((item, i) => this.hidden.set(bricks[i], item));
     this.paddle = { x: this.width / 2, w: PADDLE_W };
     for (let i = 0; i < level.balls; i++) this.balls.push({ x: 0, y: 0, vx: 0, vy: 0 });
     this.placeOnPaddle();
@@ -61,9 +76,8 @@ export class Game implements GameActions {
     const dt = FIXED_DT;
     this.elapsed += dt;
     this.fireLeft = Math.max(0, this.fireLeft - dt);
-    for (let i = this.balls.length - 1; i >= 0; i--) {
-      if (!this.moveBall(this.balls[i], dt)) this.balls.splice(i, 1);
-    }
+    this.balls = this.balls.filter((b) => this.moveBall(b, dt));
+    this.moveDrops(dt);
     if (this.bricksLeft === 0) {
       this.status = "won";
       this.score += timeBonus(this.level.par, this.elapsed);
@@ -72,13 +86,65 @@ export class Game implements GameActions {
     }
   }
 
-  // GameActions — implemented in the items task.
-  multiplyBalls(_n: number): void { throw new Error("not implemented"); }
-  addBalls(_n: number): void { throw new Error("not implemented"); }
-  growPaddle(_steps: number): void { throw new Error("not implemented"); }
-  setFire(_seconds: number): void { throw new Error("not implemented"); }
+  // ---- GameActions (called by items) ----
 
-  protected onBrickBroken(_index: number): void {}
+  multiplyBalls(n: number): void {
+    for (const b of [...this.balls]) {
+      for (let k = 1; k < n; k++) {
+        const deg = (k % 2 ? 1 : -1) * 15 * Math.ceil(k / 2);
+        this.spawn(b.x, b.y, rotate(b.vx, b.vy, deg));
+      }
+    }
+  }
+
+  addBalls(n: number): void {
+    for (let i = 0; i < n; i++) {
+      const deg = n === 1 ? 0 : -20 + (40 * i) / (n - 1);
+      this.spawn(this.paddle.x, this.paddleY - BALL_RADIUS - 1, rotate(0, -BALL_SPEED, deg));
+    }
+  }
+
+  growPaddle(steps: number): void {
+    this.paddle.w = Math.min(PADDLE_W * PADDLE_MAX, this.paddle.w + steps * PADDLE_STEP * PADDLE_W);
+    this.setPaddleX(this.paddle.x);
+  }
+
+  setFire(seconds: number): void {
+    this.fireLeft = seconds;
+  }
+
+  private spawn(x: number, y: number, v: { vx: number; vy: number }): void {
+    if (this.balls.length < MAX_BALLS) this.balls.push({ x, y, ...v });
+  }
+
+  private moveDrops(dt: number): void {
+    const half = this.paddle.w / 2;
+    this.drops = this.drops.filter((d) => {
+      d.y += DROP_SPEED * dt;
+      const caught =
+        Math.abs(d.x - this.paddle.x) <= half + DROP_RADIUS &&
+        d.y + DROP_RADIUS >= this.paddleY &&
+        d.y - DROP_RADIUS <= this.paddleY + PADDLE_H;
+      if (caught) {
+        ITEMS[d.item].apply(this);
+        this.score += 50;
+      }
+      return !caught && d.y <= this.height;
+    });
+  }
+
+  private onBrickBroken(index: number): void {
+    const pool = this.level.items?.pool ?? [];
+    let item = this.hidden.get(index);
+    if (!item && pool.length && this.rng() < (this.level.items?.dropChance ?? DEFAULT_DROP_CHANCE)) {
+      item = pool[Math.floor(this.rng() * pool.length)];
+    }
+    if (!item) return;
+    this.hidden.delete(index);
+    const col = index % this.grid.cols;
+    const row = Math.floor(index / this.grid.cols);
+    this.drops.push({ x: col * CELL + CELL / 2, y: row * CELL + CELL / 2, item });
+  }
 
   private placeOnPaddle(): void {
     const n = this.balls.length;

@@ -6,6 +6,8 @@ Single-player brick breaker (many balls, item drops) — Next.js 16 App Router, 
 
 ## Commands
 
+`make help` lists the shortcuts. Run `make check` (typecheck + lint + test + hook-test) before committing.
+
 - `npm run dev` — dev server (http://localhost:3000)
 - `npm test` — Vitest (all logic in `lib/`)
 - `npm run build` / `npm run lint` / `npx tsc --noEmit`

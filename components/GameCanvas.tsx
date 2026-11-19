@@ -14,7 +14,16 @@ type Props = {
   onQuit(): void;
 };
 
-const COLORS = { bg: "#111", brick: "#f5d90a", wall: "#8a8a8a", ball: "#fff", fire: "#ff9d3c", paddle: "#e0413a" };
+const COLORS = {
+  bg: "#1a1a1f", // slightly lighter than the page so the play area stands out
+  brick: "#f5d90a",
+  wall: "#8a8a8a",
+  ball: "#fff",
+  fire: "#ff9d3c",
+  paddle: "#e0413a",
+  edge: "#5c6b8a",
+  danger: "rgba(224, 65, 58, 0.5)",
+};
 const KEY_SPEED = 600; // px/s
 
 export default function GameCanvas({ level, playerName, onEnd, onQuit }: Props) {
@@ -80,6 +89,23 @@ export default function GameCanvas({ level, playerName, onEnd, onQuit }: Props) 
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(off, 0, 0);
       ctx.setTransform(k, 0, 0, k, 0, 0);
+
+      // World edges: left/top/right bounce balls, the bottom is where balls are lost.
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = COLORS.edge;
+      ctx.beginPath();
+      ctx.moveTo(1, game.height);
+      ctx.lineTo(1, 1);
+      ctx.lineTo(game.width - 1, 1);
+      ctx.lineTo(game.width - 1, game.height);
+      ctx.stroke();
+      ctx.strokeStyle = COLORS.danger;
+      ctx.setLineDash([6, 6]);
+      ctx.beginPath();
+      ctx.moveTo(0, game.height - 1);
+      ctx.lineTo(game.width, game.height - 1);
+      ctx.stroke();
+      ctx.setLineDash([]);
 
       ctx.fillStyle = game.fireLeft > 0 ? COLORS.fire : COLORS.ball;
       ctx.beginPath();

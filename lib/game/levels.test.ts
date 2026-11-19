@@ -12,4 +12,4 @@ test.each(LEVELS)("$id is valid", (l) => {
 });
 
 test("ids unique", () => expect(new Set(LEVELS.map((l) => l.id)).size).toBe(LEVELS.length));
-test("at least 3 levels", () => expect(LEVELS.length).toBeGreaterThanOrEqual(3));
+test("at least 20 levels", () => expect(LEVELS.length).toBeGreaterThanOrEqual(20));

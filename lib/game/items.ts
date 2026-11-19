@@ -4,6 +4,9 @@ export type GameActions = {
   addBalls(n: number): void;
   growPaddle(steps: number): void;
   setFire(seconds: number): void;
+  laser(): void;
+  setShield(seconds: number): void;
+  setBomb(seconds: number): void;
 };
 
 export type ItemDef = { label: string; color: string; apply(g: GameActions): void };
@@ -16,6 +19,10 @@ export const ITEMS = {
   up3: { label: "+3", color: "#9be03a", apply: (g) => g.addBalls(3) },
   boardx1: { label: "<->", color: "#2fa84f", apply: (g) => g.growPaddle(1) },
   fire: { label: "🔥", color: "#e8504a", apply: (g) => g.setFire(8) },
+  // special items — guaranteed once in every level
+  laser: { label: "⚡", color: "#b05cff", apply: (g) => g.laser() },
+  shield: { label: "🛡", color: "#3a8fd8", apply: (g) => g.setShield(10) },
+  bomb: { label: "💥", color: "#ff6a2b", apply: (g) => g.setBomb(6) },
 } satisfies Record<string, ItemDef>;
 
 export type ItemId = keyof typeof ITEMS;

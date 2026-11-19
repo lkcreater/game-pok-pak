@@ -32,6 +32,9 @@ export class Game implements GameActions {
   elapsed = 0;
   status: Status = "ready";
   fireLeft = 0;
+  shieldLeft = 0;
+  bombLeft = 0;
+  laserAt = -Infinity; // elapsed time of the last laser shot (for the renderer flash)
   bricksLeft: number;
   brokenCells: number[] = []; // drained by the renderer
   hidden = new Map<number, ItemId>(); // brick cell index → guaranteed item
@@ -76,6 +79,8 @@ export class Game implements GameActions {
     const dt = FIXED_DT;
     this.elapsed += dt;
     this.fireLeft = Math.max(0, this.fireLeft - dt);
+    this.shieldLeft = Math.max(0, this.shieldLeft - dt);
+    this.bombLeft = Math.max(0, this.bombLeft - dt);
     this.balls = this.balls.filter((b) => this.moveBall(b, dt));
     this.moveDrops(dt);
     if (this.bricksLeft === 0) {
@@ -111,6 +116,25 @@ export class Game implements GameActions {
 
   setFire(seconds: number): void {
     this.fireLeft = seconds;
+  }
+
+  /** Breaks every brick in the columns under the paddle, ignoring walls. */
+  laser(): void {
+    const half = this.paddle.w / 2;
+    const c0 = Math.max(0, Math.floor((this.paddle.x - half) / CELL));
+    const c1 = Math.min(this.grid.cols - 1, Math.floor((this.paddle.x + half - 1e-6) / CELL));
+    for (let row = 0; row < this.grid.rows; row++) {
+      for (let col = c0; col <= c1; col++) this.breakIfBrick(col, row);
+    }
+    this.laserAt = this.elapsed;
+  }
+
+  setShield(seconds: number): void {
+    this.shieldLeft = seconds;
+  }
+
+  setBomb(seconds: number): void {
+    this.bombLeft = seconds;
   }
 
   private spawn(x: number, y: number, v: { vx: number; vy: number }): void {
@@ -174,6 +198,9 @@ export class Game implements GameActions {
       b.vx = BALL_SPEED * Math.sin(offset * MAX_BOUNCE_DEG * DEG);
       b.vy = -BALL_SPEED * Math.cos(offset * MAX_BOUNCE_DEG * DEG);
       b.y = this.paddleY;
+    } else if (this.shieldLeft > 0 && b.vy > 0 && ny > this.height) {
+      b.vy = -b.vy; // shield along the bottom edge
+      reflected = true;
     } else if (this.hit(b.x, ny)) {
       b.vy = -b.vy;
       reflected = true;
@@ -186,19 +213,27 @@ export class Game implements GameActions {
     return b.y <= this.height;
   }
 
-  /** True when the ball must reflect off the cell at (x, y). Breaks bricks. */
+  /** True when the ball must reflect off the cell at (x, y). Breaks bricks (and their neighbours while bomb is on). */
   private hit(x: number, y: number): boolean {
     const col = Math.floor(x / CELL);
     const row = Math.floor(y / CELL);
     const cell = cellAt(this.grid, col, row);
     if (cell === Cell.Wall) return true;
     if (cell !== Cell.Brick) return false;
+    this.breakIfBrick(col, row);
+    if (this.bombLeft > 0) {
+      for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) this.breakIfBrick(col + dc, row + dr);
+    }
+    return this.fireLeft <= 0;
+  }
+
+  private breakIfBrick(col: number, row: number): void {
+    if (cellAt(this.grid, col, row) !== Cell.Brick) return;
     const index = row * this.grid.cols + col;
     this.grid.cells[index] = Cell.Empty;
     this.bricksLeft--;
     this.score += 10;
     this.brokenCells.push(index);
     this.onBrickBroken(index);
-    return this.fireLeft <= 0;
   }
 }

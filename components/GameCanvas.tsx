@@ -23,6 +23,9 @@ const COLORS = {
   paddle: "#e0413a",
   edge: "#5c6b8a",
   danger: "rgba(224, 65, 58, 0.5)",
+  shield: "#4fc3ff",
+  bomb: "#ff5c8a",
+  laser: "rgba(190, 120, 255, ALPHA)",
 };
 const KEY_SPEED = 600; // px/s
 
@@ -99,15 +102,26 @@ export default function GameCanvas({ level, playerName, onEnd, onQuit }: Props) 
       ctx.lineTo(game.width - 1, 1);
       ctx.lineTo(game.width - 1, game.height);
       ctx.stroke();
-      ctx.strokeStyle = COLORS.danger;
-      ctx.setLineDash([6, 6]);
+      if (game.shieldLeft > 0) {
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = COLORS.shield;
+      } else {
+        ctx.strokeStyle = COLORS.danger;
+        ctx.setLineDash([6, 6]);
+      }
       ctx.beginPath();
-      ctx.moveTo(0, game.height - 1);
-      ctx.lineTo(game.width, game.height - 1);
+      ctx.moveTo(0, game.height - 2);
+      ctx.lineTo(game.width, game.height - 2);
       ctx.stroke();
       ctx.setLineDash([]);
 
-      ctx.fillStyle = game.fireLeft > 0 ? COLORS.fire : COLORS.ball;
+      const laserAge = game.elapsed - game.laserAt;
+      if (laserAge < 0.3) {
+        ctx.fillStyle = COLORS.laser.replace("ALPHA", String(0.6 * (1 - laserAge / 0.3)));
+        ctx.fillRect(game.paddle.x - game.paddle.w / 2, 0, game.paddle.w, game.paddleY);
+      }
+
+      ctx.fillStyle = game.fireLeft > 0 ? COLORS.fire : game.bombLeft > 0 ? COLORS.bomb : COLORS.ball;
       ctx.beginPath();
       for (const b of game.balls) {
         ctx.moveTo(b.x + BALL_RADIUS, b.y);
